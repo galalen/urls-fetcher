@@ -1,15 +1,16 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/alitto/pond"
 	"github.com/galalen/urls-fetcher/fileops"
 	"github.com/galalen/urls-fetcher/utils"
 )
@@ -58,6 +59,7 @@ func fetchDataAndProcess(url string, m *sync.Map) {
 
 	if res.StatusCode != 200 {
 		log.Printf("status code error: %d %s", res.StatusCode, res.Status)
+		return
 	}
 
 	log.Printf("Processing: %s ...", url)
@@ -95,19 +97,41 @@ func getTopNWords(m *sync.Map, n int) []string {
 	return keys[:n]
 }
 
-func main() {
-	urls := fileops.ReadUrls(urlsFile)
+func worker(id int, jobs <-chan string, results chan<- struct{}, m *sync.Map) {
+	for j := range jobs {
+		fetchDataAndProcess(j, m)
+		results <- struct{}{}
+	}
+}
 
+func main() {
+
+	urls := fileops.ReadUrls(urlsFile)
 	m := &sync.Map{}
 
-	pool := pond.New(1000, 10000)
-	for _, url := range urls {
-		pool.Submit(func() {
-			fetchDataAndProcess(url, m)
-		})
-	}
-	pool.StopAndWait()
+	numJobs := len(urls)
+	jobs := make(chan string, numJobs)
+	results := make(chan struct{}, numJobs)
 
-	words := getTopNWords(m, 10)
+	numWorkers := 50
+	for w := 1; w <= numWorkers; w++ {
+		go worker(w, jobs, results, m)
+	}
+
+	for i, url := range urls {
+		if i%100 == 0 {
+			fmt.Println("Sleeping for 5 sec")
+			time.Sleep(5 * time.Second)
+		}
+		jobs <- url
+	}
+
+	for a := 1; a <= numJobs; a++ {
+		<-results
+	}
+
+	topWord := 10
+	fmt.Printf("Viewing top %d words:\n", topWord)
+	words := getTopNWords(m, topWord)
 	utils.PrettyPrint(words)
 }
