@@ -113,13 +113,13 @@ func main() {
 	jobs := make(chan string, numJobs)
 	results := make(chan struct{}, numJobs)
 
-	numWorkers := 50
+	numWorkers := 20
 	for w := 1; w <= numWorkers; w++ {
 		go worker(w, jobs, results, m)
 	}
 
 	for i, url := range urls {
-		if i%100 == 0 {
+		if i%50 == 0 {
 			fmt.Println("Sleeping for 5 sec")
 			time.Sleep(5 * time.Second)
 		}
