@@ -47,10 +47,17 @@ func processDoc(r io.ReadCloser, m *sync.Map) {
 
 func fetchDataAndProcess(url string, m *sync.Map) {
 	log.Printf("Fetching: %s ...", url)
-	// client := &http.Client{Timeout: 10 * time.Second}
-	// res, err := client.Get(url)
 
-	res, err := http.Get(url)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	// req.Header.Set("User-Agent", utils.GetRandomUserAgent())
+	client := http.Client{Timeout: 10 * time.Second}
+	res, err := client.Do(req)
+
+	// res, err := http.Get(url)
 	if err != nil {
 		log.Printf("Error fetching %s:%s", url, err)
 		return
@@ -113,13 +120,13 @@ func main() {
 	jobs := make(chan string, numJobs)
 	results := make(chan struct{}, numJobs)
 
-	numWorkers := 20
+	numWorkers := 30
 	for w := 1; w <= numWorkers; w++ {
 		go worker(w, jobs, results, m)
 	}
 
 	for i, url := range urls {
-		if i%50 == 0 {
+		if i%100 == 0 {
 			fmt.Println("Sleeping for 5 sec")
 			time.Sleep(5 * time.Second)
 		}
