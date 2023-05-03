@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math/rand"
 	"net/http"
 	"sort"
 	"strings"
@@ -120,15 +121,21 @@ func main() {
 	jobs := make(chan string, numJobs)
 	results := make(chan struct{}, numJobs)
 
-	numWorkers := 30
+	numWorkers := 20
 	for w := 1; w <= numWorkers; w++ {
 		go worker(w, jobs, results, m)
 	}
 
+	rand.Seed(time.Now().UnixNano())
+	delay := 5
 	for i, url := range urls {
-		if i%100 == 0 {
-			fmt.Println("Sleeping for 5 sec")
-			time.Sleep(5 * time.Second)
+		if i > 0 && i%100 == 0 {
+			randomDelay := rand.Intn(delay) + 1
+			fmt.Printf("Sleeping for %d sec", randomDelay)
+			time.Sleep(time.Duration(randomDelay) * time.Second)
+		}
+		if i > 0 && i%1000 == 0 {
+			delay += 5
 		}
 		jobs <- url
 	}
