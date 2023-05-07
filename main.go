@@ -135,9 +135,9 @@ func main() {
 			// time.Sleep(time.Duration(randomDelay) * time.Second)
 			time.Sleep(time.Duration(delay) * time.Second)
 		}
-		// if i > 0 && i%1000 == 0 {
-		// 	delay += 5
-		// }
+		if i > 0 && i%1000 == 0 {
+			delay += 5
+		}
 		jobs <- url
 	}
 
