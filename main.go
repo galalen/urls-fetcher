@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"math/rand"
 	"net/http"
 	"sort"
 	"strings"
@@ -104,28 +103,31 @@ func getTopNWords(m *sync.Map, n int) []string {
 	return keys[:n]
 }
 
-func worker(id int, jobs <-chan string, results chan<- struct{}, m *sync.Map) {
+func worker(jobs <-chan string, m *sync.Map) {
 	for j := range jobs {
 		fetchDataAndProcess(j, m)
-		results <- struct{}{}
 	}
 }
 
 func main() {
-
 	urls := fileops.ReadUrls(urlsFile)
 	m := &sync.Map{}
 
 	numJobs := len(urls)
 	jobs := make(chan string, numJobs)
-	results := make(chan struct{}, numJobs)
-
 	numWorkers := 10
+
+	var wg sync.WaitGroup
+	wg.Add(numWorkers)
+
 	for w := 1; w <= numWorkers; w++ {
-		go worker(w, jobs, results, m)
+		go func(id int) {
+			defer wg.Done()
+			worker(jobs, m)
+		}(w)
 	}
 
-	rand.Seed(time.Now().UnixNano())
+	// rand.Seed(time.Now().UnixNano())
 	delay := 5
 	for i, url := range urls {
 		fmt.Printf("i => (%d)\n", i+1)
@@ -142,10 +144,7 @@ func main() {
 	}
 	close(jobs)
 
-	for a := 1; a <= numJobs; a++ {
-		<-results
-	}
-	close(results)
+	wg.Wait()
 
 	topWord := 10
 	fmt.Printf("Viewing top %d words:\n", topWord)
