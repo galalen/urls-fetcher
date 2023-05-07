@@ -140,10 +140,12 @@ func main() {
 		}
 		jobs <- url
 	}
+	close(jobs)
 
 	for a := 1; a <= numJobs; a++ {
 		<-results
 	}
+	close(results)
 
 	topWord := 10
 	fmt.Printf("Viewing top %d words:\n", topWord)
