@@ -55,10 +55,9 @@ func fetchDataAndProcess(url string, m *sync.Map) {
 		return
 	}
 	// req.Header.Set("User-Agent", utils.GetRandomUserAgent())
-	client := http.Client{Timeout: 10 * time.Second}
+	client := http.Client{}
 	res, err := client.Do(req)
 
-	// res, err := http.Get(url)
 	if err != nil {
 		log.Printf("Error fetching %s:%s", url, err)
 		return
@@ -121,7 +120,7 @@ func main() {
 	jobs := make(chan string, numJobs)
 	results := make(chan struct{}, numJobs)
 
-	numWorkers := 20
+	numWorkers := 10
 	for w := 1; w <= numWorkers; w++ {
 		go worker(w, jobs, results, m)
 	}
@@ -129,14 +128,16 @@ func main() {
 	rand.Seed(time.Now().UnixNano())
 	delay := 5
 	for i, url := range urls {
-		if i > 0 && i%100 == 0 {
-			randomDelay := rand.Intn(delay) + 1
-			fmt.Printf("Sleeping for %d sec", randomDelay)
-			time.Sleep(time.Duration(randomDelay) * time.Second)
+		fmt.Printf("i => (%d)\n", i+1)
+		if i > 0 && i%10 == 0 {
+			// randomDelay := rand.Intn(delay) + 1
+			fmt.Printf("Sleeping for %d sec\n", delay)
+			// time.Sleep(time.Duration(randomDelay) * time.Second)
+			time.Sleep(time.Duration(delay) * time.Second)
 		}
-		if i > 0 && i%1000 == 0 {
-			delay += 5
-		}
+		// if i > 0 && i%1000 == 0 {
+		// 	delay += 5
+		// }
 		jobs <- url
 	}
 
