@@ -5,7 +5,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -72,37 +71,6 @@ func fetchDataAndProcess(url string, m *sync.Map) {
 	processDoc(res.Body, m)
 }
 
-func getTopNWords(m *sync.Map, n int) []string {
-	var pairs []struct {
-		key   string
-		value int
-	}
-
-	m.Range(func(k, v interface{}) bool {
-		pairs = append(pairs, struct {
-			key   string
-			value int
-		}{k.(string), v.(int)})
-
-		return true
-	})
-
-	sort.Slice(pairs, func(i, j int) bool {
-		return pairs[i].value > pairs[j].value
-	})
-
-	var keys []string
-	for _, pair := range pairs {
-		keys = append(keys, pair.key)
-	}
-
-	if n > len(pairs) {
-		return keys
-	}
-
-	return keys[:n]
-}
-
 func worker(jobs <-chan string, m *sync.Map) {
 	for j := range jobs {
 		fetchDataAndProcess(j, m)
@@ -148,6 +116,6 @@ func main() {
 
 	topWord := 10
 	fmt.Printf("Viewing top %d words:\n", topWord)
-	words := getTopNWords(m, topWord)
+	words := utils.GetTopNWords(m, topWord)
 	utils.PrettyPrint(words)
 }

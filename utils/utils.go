@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
+	"sort"
+	"sync"
 	"time"
 	"unicode"
 )
@@ -48,4 +50,35 @@ func PrettyPrint(words []string) {
 		panic(err)
 	}
 	fmt.Println(string(b))
+}
+
+func GetTopNWords(m *sync.Map, n int) []string {
+	var pairs []struct {
+		key   string
+		value int
+	}
+
+	m.Range(func(k, v interface{}) bool {
+		pairs = append(pairs, struct {
+			key   string
+			value int
+		}{k.(string), v.(int)})
+
+		return true
+	})
+
+	sort.Slice(pairs, func(i, j int) bool {
+		return pairs[i].value > pairs[j].value
+	})
+
+	var keys []string
+	for _, pair := range pairs {
+		keys = append(keys, pair.key)
+	}
+
+	if n > len(pairs) {
+		return keys
+	}
+
+	return keys[:n]
 }
